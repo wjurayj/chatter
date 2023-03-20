@@ -1,5 +1,5 @@
 import pyaudio
-import asyncio
+import threading
 import time
 import openai
 import math
@@ -7,6 +7,8 @@ import struct
 import os
 import wave
 import logging
+import queue
+import textwrap
 
 
 
@@ -15,36 +17,37 @@ import logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s',
-    filename='calltimes.log',
+    filename='logs/listener.log',
     filemode='w'
 )
 
 
+
+# TODO: explore speechrecognition library
 class Listener:
-    def __init__(self, config):
+    def __init__(self, config, logger=None):
         self.listening = False
-        self.transcribe_queue = asyncio.Queue()
+        self.transcribe_queue = queue.Queue()
         self.dir = config.get("dir", "./user_audio/")
         # self.audio = pyaudio.PyAudio()
         self.silence_threshold = config.get('silence_threshold', 2000)
-        self.transcribe_trigger = config.get('transcribe_trigger', 1.5)
+        self.transcribe_trigger = config.get('transcribe_trigger', 1)
         self.tolerable_silence = config.get('tolerable_silence', 3)
         self.max_duration = config.get('max_duration', 60)
         self.textmap = {}
         self.thinker = None
-        self.logger = logging.getLogger()
-        try:
-            self.loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self.loop = asyncio.new_event_loop()
-
-        asyncio.set_event_loop(self.loop)
+        self.logger = logger if logger else logging.getLogger()
 
         pass
     
-    async def listen(self):
+    def listen(self):
         #continuously save audio to file (append? or just multiple audio files)
-    
+        print(textwrap.dedent("""
+             --------------------------
+            | Don't all speak at once! |
+             --------------------------
+        """))
+        
         start_time = time.time()
 
         FORMAT = pyaudio.paInt16
@@ -86,7 +89,7 @@ class Listener:
                     
                 if not written and silence_counter > RATE / CHUNK * WRITE_SECONDS: 
                     # self.logger.info("The silence has become unbearable!")
-                    print('Writing!')
+                    # print('Writing!')
                             # stop recording audio and save to file
                     stream.stop_stream()
                     stream.close()
@@ -101,10 +104,12 @@ class Listener:
                         # Write audio buffer to file
                         # Reset audio buffer
                         # Add transcription task to queue
-                        task = asyncio.run_coroutine_threadsafe(self.transcribe(filename), self.loop)
-                        await self.transcribe_queue.put(task)
+                        thread = threading.Thread(target=self.transcribe, args=(filename,), daemon=True)
+                        thread.start()
+                        # task = asyncio.run_coroutine_threadsafe(self.transcribe(filename), self.loop)
+                        self.transcribe_queue.put(thread)
                         # restart audio stream
-                        print('restarting audio stream')
+                        # print('restarting audio stream')
                         stream = audio.open(format=FORMAT, channels=CHANNELS,
                                             rate=RATE, input=True,
                                             frames_per_buffer=CHUNK)
@@ -119,7 +124,7 @@ class Listener:
                     elapsed_time = end_time - start_time
                     self.logger.info(f"Stopped listening after {elapsed_time:.2f} seconds")
 
-                    await self.stop()
+                    self.stop()
                     break
                    
 
@@ -131,15 +136,15 @@ class Listener:
         elapsed_time = end_time - start_time
         self.logger.info(f"listen() complete in {elapsed_time:.2f} seconds")
 
-    async def stop(self):
+    def stop(self):
         self.listening = False
-        print(self.textmap)
+        # print(self.textmap)
         self.logger.info("About to start closing these mf tasks")
         while not self.transcribe_queue.empty():
-            task = await self.transcribe_queue.get()
-            await task
+            thread = self.transcribe_queue.get()
+            thread.join()
             
-        print(self.textmap)
+        # print(self.textmap)
         self.logger.info("Closed all the mf tasks")
 
             
@@ -148,11 +153,12 @@ class Listener:
         utterance = ""
 
         for k in keys:
-            utterance += self.textmap[k]
+            utterance += f" {self.textmap[k]}"
         
+        # HOw can we do this, as we transcribe? How can the thinker make use of partial transcriptions?
         if self.thinker:
-            pass
-            #send to thinker
+            self.thinker.receive(utterance)
+
         else:
             print(utterance)
             with open('transcript.txt', 'w') as f:
@@ -160,38 +166,46 @@ class Listener:
         self.logger.info("Have written utterance to file, or sent it to the brain :-)")
 
             
-    async def start(self):
+    def start(self):
         if self.listening:
             print('already listening!')
         else:
             self.listening = True
-            await self.listen()
+            self.listen()
             
     # def run(self):
     
-    async def transcribe(self, filename):
+    def transcribe(self, filename):
         start_time = time.time()
 
         audio_file = open(filename, "rb")
 
-        # TODO: include prompt here for context on homonyms, noise *******
-        transcript = openai.Audio.transcribe("whisper-1", audio_file)
+        # TODO: include prompt here for context on homonyms, noise
+        # ^ ^ ^ THis is now key since you don't have the whole audio history
+        transcript = openai.Audio.transcribe("whisper-1", audio_file, prompt=self._collate_textmap())
 
         end_time = time.time()
         elapsed_time = end_time - start_time
-        
+        content = transcript.text
+
         # demarcate pauses in speech
         if content and content[-1] not in '.!?:;,':
             content += ','
 
         self.logger.info(f"Finished transcription of {filename} in: {elapsed_time:.2f} seconds")
-        content = transcript.text
         self.textmap[filename] = content #float(filename[:-4])
-        print("transcribed:", content)
+        # print("transcribed:", content)
         return content
     
+    def _collate_textmap(self):
+        keys = sorted(list(self.textmap.keys()))
+        utterance = ""
+
+        for k in keys:
+            utterance += f" {self.textmap[k]}"
+        return utterance
     
 if __name__ == "__main__":
     listener = Listener({})
 
-    asyncio.run(listener.start())
+    listener.start()
