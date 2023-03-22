@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Streaming</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.min.js"></script>
+</head>
+<body>
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
+
+    <script>
+        const socket = io();
+
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function startRecording() {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            mediaRecorder = new MediaRecorder(mediaStream);
+            mediaRecorder.start();
+
+            mediaRecorder.addEventListener("dataavailable", event => {
+                audioChunks.push(event.data);
+            });
+
+            mediaRecorder.addEventListener("stop", () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                sendAudioToServer(audioBlob);
+                audioChunks = [];
+            });
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+            }
+        }
+
+        function sendAudioToServer(audioBlob) {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(audioBlob);
+            reader.onloadend = () => {
+                const audioBuffer = new Uint8Array(reader.result);
+                socket.emit('audio', audioBuffer);
+            };
+        }
+    </script>
+</body>
+</html>
