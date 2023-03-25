@@ -15,6 +15,7 @@
             font-family: Arial, sans-serif;
             background: url("/static/background.jpg") no-repeat center center fixed;
             background-size: cover;
+            background-color: #EDEDED /* #F0F0F0; */
         }
 
         #text-form {
@@ -46,7 +47,7 @@
             width: 100%;
             padding: 0 2em;
             box-sizing: border-box;
-            background-color: rgba(255, 255, 255, 0.7);
+/*             background-color: #EDEDED;/* rgba(255, 255, 255, 0.7); */ */
             border-radius: 8px;
             margin-top: 5px;
             margin-bottom: 5px;
@@ -67,6 +68,15 @@
             color: darkblue;
             font-weight: bold;
         }
+        
+        .user-avatar, .server-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
     </style>
 </head>
 <body>
@@ -84,12 +94,32 @@
         const receivedText = document.getElementById('received-text');
         const processingIndicator = document.getElementById('processing-indicator');
 
+//         textForm.addEventListener('submit', (event) => {
+//             event.preventDefault();
+//             const text = textInput.value.trim();
+//             if (text) {
+//                 const userText = document.createElement('p');
+//                 userText.textContent = text;
+//                 userText.className = 'user-text';
+//                 receivedText.appendChild(userText);
+//                 receivedText.scrollTop = receivedText.scrollHeight;
+
+//                 socket.emit('send_text', text);
+//                 textInput.value = '';
+//                 textInput.disabled = true;
+//                 processingIndicator.style.display = 'block';
+//             }
+//         });
         textForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const text = textInput.value.trim();
             if (text) {
                 const userText = document.createElement('p');
-                userText.textContent = text;
+                const avatar = document.createElement('img');
+                avatar.src = 'http://occ-0-999-1001.1.nflxso.net/dnm/api/v6/K6hjPJd6cR6FpVELC5Pd6ovHRSk/AAAABWHxaOxUNqEupjwCw-M9tgFfGFlQ22EjoG2ZYC1FsjjAWSdxOIfjdifW-rJrpNaLzTC0rpsRhE7DoH8h2zWxIQXEKaAsFUuDO2yl.png?r=2b1)'; //'https://example.com/user-avatar.png';
+                avatar.className = 'user-avatar';
+                userText.appendChild(avatar);
+                userText.appendChild(document.createTextNode(text));
                 userText.className = 'user-text';
                 receivedText.appendChild(userText);
                 receivedText.scrollTop = receivedText.scrollHeight;
@@ -100,27 +130,98 @@
                 processingIndicator.style.display = 'block';
             }
         });
+
         
+// ... rest of the code
+
         socket.on('receive_word', (word) => {
             const lastElem = receivedText.lastElementChild;
+            const lastServerTextSpan = lastElem && lastElem.querySelector('.server-text-content');
 
-            if (word.includes('\n')) {//(word === '\n') {
-                // Create a new paragraph element for a newline character
+            if (word.includes('\n')) {
                 const serverText = document.createElement('p');
                 serverText.className = 'server-text';
                 receivedText.appendChild(serverText);
             } else {
-                if (lastElem && lastElem.className === 'server-text') {
-                    lastElem.textContent += word;
+                if (lastServerTextSpan && lastElem.className === 'server-text') {
+                    lastServerTextSpan.textContent += word;
                 } else {
                     const serverText = document.createElement('p');
-                    serverText.textContent = word;
+
+                    if (!lastElem || lastElem.className !== 'server-text') {
+                        const avatar = document.createElement('img');
+                        avatar.src = 'https://thumbs.dreamstime.com/z/cute-cartoon-robot-head-creative-illustrated-149232864.jpg'//'https://example.com/server-avatar.png';
+                        avatar.className = 'server-avatar';
+                        serverText.appendChild(avatar);
+                    }
+
+                    const serverTextSpan = document.createElement('span');
+                    serverTextSpan.textContent = word;
+                    serverTextSpan.className = 'server-text-content';
+                    serverText.appendChild(serverTextSpan);
+
                     serverText.className = 'server-text';
                     receivedText.appendChild(serverText);
                 }
             }
             receivedText.scrollTop = receivedText.scrollHeight;
         });
+//         socket.on('receive_word', (word) => {
+//             const lastElem = receivedText.lastElementChild;
+//             const lastServerTextSpan = lastElem && lastElem.querySelector('.server-text-content');
+
+//             if (word.includes('\n')) {
+//                 const serverText = document.createElement('br');//('p');
+//                 serverText.className = 'server-text';
+//                 receivedText.appendChild(serverText);
+//             } else {
+//                 if (lastServerTextSpan && lastElem.className === 'server-text') {
+//                     lastServerTextSpan.textContent += word;
+//                 } else {
+//                     const serverText = document.createElement('p');
+//                     const avatar = document.createElement('img');
+//                     avatar.src = 'https://thumbs.dreamstime.com/z/cute-cartoon-robot-head-creative-illustrated-149232864.jpg'//'https://example.com/server-avatar.png';
+//                     avatar.className = 'server-avatar';
+//                     serverText.appendChild(avatar);
+
+//                     const serverTextSpan = document.createElement('span');
+//                     serverTextSpan.textContent = word;
+//                     serverTextSpan.className = 'server-text-content';
+//                     serverText.appendChild(serverTextSpan);
+
+//                     serverText.className = 'server-text';
+//                     receivedText.appendChild(serverText);
+//                 }
+//             }
+//             receivedText.scrollTop = receivedText.scrollHeight;
+//         });
+
+// ... rest of the code
+
+//         socket.on('receive_word', (word) => {
+//             const lastElem = receivedText.lastElementChild;
+
+//             if (word.includes('\n')) {
+//                 const serverText = document.createElement('p');
+//                 const avatar = document.createElement('img');
+//                 avatar.src = 'https://w7.pngwing.com/pngs/981/151/png-transparent-gray-and-red-robot-head-illustration-iphone-emoji-sticker-robot-electronics-heart-mobile-phones.png'//'https://example.com/server-avatar.png';
+//                 avatar.className = 'server-avatar';
+//                 serverText.appendChild(avatar);
+
+//                 serverText.className = 'server-text';
+//                 receivedText.appendChild(serverText);
+//             } else {
+//                 if (lastElem && lastElem.className === 'server-text') {
+//                     lastElem.textContent += word;
+//                 } else {
+//                     const serverText = document.createElement('p');
+//                     serverText.appendChild(document.createTextNode(word));
+//                     serverText.className = 'server-text';
+//                     receivedText.appendChild(serverText);
+//                 }
+//             }
+//             receivedText.scrollTop = receivedText.scrollHeight;
+//         });
 
         socket.on('processing_done', () => {
             processingIndicator.style.display = 'none';
