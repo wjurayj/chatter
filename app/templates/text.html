@@ -56,8 +56,14 @@
         #processing-indicator {
             display: none;
             margin-bottom: 1em;
-            color: #4d90fe;
+/*             color: #4d90fe; */
+            color: darkblue;
             font-weight: bold;
+            text-align: left;
+            width: 100%;
+            padding: 0 2em;
+            box-sizing: border-box;
+            border-radius: 8px;
         }
 
         .user-text, .server-text {
@@ -81,7 +87,7 @@
 </head>
 <body>
     <div id="received-text"></div>
-    <p id="processing-indicator">Processing...</p>
+    <p id="processing-indicator">. . .</p>
     <form id="text-form">
         <input type="text" id="text-input" placeholder="Enter your text...">
     </form>
@@ -94,22 +100,6 @@
         const receivedText = document.getElementById('received-text');
         const processingIndicator = document.getElementById('processing-indicator');
 
-//         textForm.addEventListener('submit', (event) => {
-//             event.preventDefault();
-//             const text = textInput.value.trim();
-//             if (text) {
-//                 const userText = document.createElement('p');
-//                 userText.textContent = text;
-//                 userText.className = 'user-text';
-//                 receivedText.appendChild(userText);
-//                 receivedText.scrollTop = receivedText.scrollHeight;
-
-//                 socket.emit('send_text', text);
-//                 textInput.value = '';
-//                 textInput.disabled = true;
-//                 processingIndicator.style.display = 'block';
-//             }
-//         });
         textForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const text = textInput.value.trim();
@@ -166,63 +156,6 @@
             }
             receivedText.scrollTop = receivedText.scrollHeight;
         });
-//         socket.on('receive_word', (word) => {
-//             const lastElem = receivedText.lastElementChild;
-//             const lastServerTextSpan = lastElem && lastElem.querySelector('.server-text-content');
-
-//             if (word.includes('\n')) {
-//                 const serverText = document.createElement('br');//('p');
-//                 serverText.className = 'server-text';
-//                 receivedText.appendChild(serverText);
-//             } else {
-//                 if (lastServerTextSpan && lastElem.className === 'server-text') {
-//                     lastServerTextSpan.textContent += word;
-//                 } else {
-//                     const serverText = document.createElement('p');
-//                     const avatar = document.createElement('img');
-//                     avatar.src = 'https://thumbs.dreamstime.com/z/cute-cartoon-robot-head-creative-illustrated-149232864.jpg'//'https://example.com/server-avatar.png';
-//                     avatar.className = 'server-avatar';
-//                     serverText.appendChild(avatar);
-
-//                     const serverTextSpan = document.createElement('span');
-//                     serverTextSpan.textContent = word;
-//                     serverTextSpan.className = 'server-text-content';
-//                     serverText.appendChild(serverTextSpan);
-
-//                     serverText.className = 'server-text';
-//                     receivedText.appendChild(serverText);
-//                 }
-//             }
-//             receivedText.scrollTop = receivedText.scrollHeight;
-//         });
-
-// ... rest of the code
-
-//         socket.on('receive_word', (word) => {
-//             const lastElem = receivedText.lastElementChild;
-
-//             if (word.includes('\n')) {
-//                 const serverText = document.createElement('p');
-//                 const avatar = document.createElement('img');
-//                 avatar.src = 'https://w7.pngwing.com/pngs/981/151/png-transparent-gray-and-red-robot-head-illustration-iphone-emoji-sticker-robot-electronics-heart-mobile-phones.png'//'https://example.com/server-avatar.png';
-//                 avatar.className = 'server-avatar';
-//                 serverText.appendChild(avatar);
-
-//                 serverText.className = 'server-text';
-//                 receivedText.appendChild(serverText);
-//             } else {
-//                 if (lastElem && lastElem.className === 'server-text') {
-//                     lastElem.textContent += word;
-//                 } else {
-//                     const serverText = document.createElement('p');
-//                     serverText.appendChild(document.createTextNode(word));
-//                     serverText.className = 'server-text';
-//                     receivedText.appendChild(serverText);
-//                 }
-//             }
-//             receivedText.scrollTop = receivedText.scrollHeight;
-//         });
-
         socket.on('processing_done', () => {
             processingIndicator.style.display = 'none';
             const newline = document.createElement('br');
