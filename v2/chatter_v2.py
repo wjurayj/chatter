@@ -31,8 +31,6 @@ def setup_logger(name, log_file, level=logging.INFO):
     return logger
 
 
-# Raskin design principle: The user is never wrong
-    # Design to make humans' constraints beautiful
 
 #Ideally, each class would simply look to the parent (i.e. for bot in [listener, thinker, speaker]: bot.parent = self
 #pass logdir through config?
@@ -65,10 +63,15 @@ class Chatter_v2:
             print("==========================")
             print('% ', end="", flush=True)
         
-    def think(self):
-        #think out loud
-        self.thinker.process()
-    
+    def think(self, webapp=False):
+        if webapp:
+            return self.thinker.process()
+        else:
+            gen = self.thinker.process()
+            for ch in gen:
+                print(ch, end="", flush=True)
+
+        #think out loud    
     #right now the spaeaker is called directly by thinker.process, but ideally it'd be from here
     def speak(self):
         if self.speaker:
@@ -97,9 +100,7 @@ class Chatter_v2:
         # Format current_time as a string
         formatted_time = time.strftime("%Y-%m-%d.%H-%M-%S", current_time)
         with open(f'./logs/{formatted_time}.json', 'w') as f:
-            json.dump(chat.thinker.utterances, f)
-
-
+            json.dump(self.thinker.utterances, f)
 
         
 if __name__ == "__main__":
